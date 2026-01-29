@@ -13,8 +13,17 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  albums    Album[]
+  updatedAt     DateTime  @updatedAt
+  emailVerified DateTime?
+  albums        Album[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model AlbumFormat {

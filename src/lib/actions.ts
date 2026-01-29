@@ -5,6 +5,8 @@ import { db } from './db';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { z } from 'zod';
+import { generateVerificationToken, getVerificationTokenByToken } from './tokens';
+import { sendVerificationEmail } from './mail';
 
 const MAX_RETRIES = 3;
 
@@ -81,11 +83,55 @@ export async function registerUser(
             },
         });
 
-        return 'User created! Please log in.';
+        const verificationToken = await generateVerificationToken(email);
+        await sendVerificationEmail(email, verificationToken.token);
+
+        return 'Confirmation email sent! Please check your email.';
     } catch (error) {
         console.error('Registration error:', error);
         return 'Failed to create user.';
     }
+}
+
+export async function verifyEmail(token: string) {
+    const existingToken = await getVerificationTokenByToken(token);
+
+    if (!existingToken) {
+        return { error: 'Token does not exist!' };
+    }
+
+    const hasExpired = new Date(existingToken.expires) < new Date();
+
+    if (hasExpired) {
+        return { error: 'Token has expired!' };
+    }
+
+    const existingUser = await db.user.findUnique({
+        where: { email: existingToken.identifier },
+    });
+
+    if (!existingUser) {
+        return { error: 'Email does not exist!' };
+    }
+
+    await db.user.update({
+        where: { id: existingUser.id },
+        data: {
+            emailVerified: new Date(),
+            email: existingToken.identifier,
+        },
+    });
+
+    await db.verificationToken.delete({
+        where: {
+            identifier_token: {
+                identifier: existingToken.identifier,
+                token: existingToken.token,
+            },
+        },
+    });
+
+    return { success: 'Email verified!' };
 }
 
 export async function getAlbumFormats() {
