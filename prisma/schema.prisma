@@ -16,6 +16,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   emailVerified DateTime?
   albums        Album[]
+  orders        Order[]
 }
 
 model VerificationToken {
@@ -54,9 +55,29 @@ model Album {
   albumFormatId String
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  format        AlbumFormat @relation(fields: [albumFormatId], references: [id])
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  format        AlbumFormat @relation(fields: [albumFormatId], references: [id])
+  orders        Order[]
   pages         Page[]
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  albumId        String
+  userId         String
+  paperStyle     String
+  deliveryMethod String
+  customerName   String
+  address        String
+  city           String?
+  zipCode        String?
+  country        String?
+  status         String   @default("pending")
+  totalAmount    Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  album          Album    @relation(fields: [albumId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Page {

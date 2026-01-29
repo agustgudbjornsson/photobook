@@ -20,13 +20,12 @@ export async function authenticate(
             await signIn('credentials', formData);
             return undefined; // Success, redirect handled by middleware/config
         } catch (error) {
+            const err = error as any;
+            if (err.type === 'CredentialsSignin' || err.message?.includes('CredentialsSignin')) {
+                return 'Invalid email or password.';
+            }
             if (error instanceof AuthError) {
-                switch (error.type) {
-                    case 'CredentialsSignin':
-                        return 'Invalid credentials.';
-                    default:
-                        return 'Something went wrong.';
-                }
+                return 'Something went wrong during authentication.';
             }
             // If it's not an AuthError, it might be a redirect (which throws in Next.js actions) which we should rethrow
             // OR a database connection error.
@@ -237,6 +236,12 @@ export async function createAlbum(prevState: any, formData: FormData) {
                 coverColor: parsed.data.coverColor,
                 albumFormatId: parsed.data.formatId,
                 userId: user.id,
+                pages: {
+                    create: [
+                        { pageNumber: 0, content: JSON.stringify([]) },
+                        { pageNumber: 1, content: JSON.stringify([]) },
+                    ]
+                }
             },
         });
 
@@ -244,5 +249,186 @@ export async function createAlbum(prevState: any, formData: FormData) {
     } catch (error) {
         console.error('Failed to create album:', error);
         return { message: 'Failed to create album' };
+    }
+}
+
+export async function deleteAlbum(albumId: string) {
+    const session = await import('@/auth').then(m => m.auth());
+    if (!session?.user?.email) {
+        throw new Error('Not authenticated');
+    }
+
+    const user = await db.user.findUnique({ where: { email: session.user.email } });
+    if (!user) throw new Error('User not found');
+
+    try {
+        await db.album.delete({
+            where: {
+                id: albumId,
+                userId: user.id, // Ensure user owns the album
+            },
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete album:', error);
+        return { message: 'Failed to delete album' };
+    }
+}
+
+export async function getAlbum(id: string) {
+    const session = await import('@/auth').then(m => m.auth());
+    if (!session?.user?.email) {
+        return null;
+    }
+
+    try {
+        return await db.album.findUnique({
+            where: { id },
+            include: {
+                pages: {
+                    orderBy: { pageNumber: 'asc' },
+                },
+                format: true,
+            },
+        });
+    } catch (error) {
+        console.error('Failed to fetch album:', error);
+        return null;
+    }
+}
+
+export async function updatePageContent(pageId: string, content: string) {
+    const session = await import('@/auth').then(m => m.auth());
+    if (!session?.user?.email) {
+        throw new Error('Not authenticated');
+    }
+
+    try {
+        await db.page.update({
+            where: { id: pageId },
+            data: { content },
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to update page content:', error);
+        return { message: 'Failed to update page' };
+    }
+}
+
+export async function addPage(albumId: string, pageNumber: number) {
+    const session = await import('@/auth').then(m => m.auth());
+    if (!session?.user?.email) {
+        throw new Error('Not authenticated');
+    }
+
+    try {
+        const page = await db.page.create({
+            data: {
+                albumId,
+                pageNumber,
+                content: JSON.stringify([]), // Empty array of photos
+            },
+        });
+        return { success: true, page };
+    } catch (error) {
+        console.error('Failed to add page:', error);
+        return { message: 'Failed to add page' };
+    }
+}
+
+export async function removePage(pageId: string) {
+    const session = await import('@/auth').then(m => m.auth());
+    if (!session?.user?.email) {
+        throw new Error('Not authenticated');
+    }
+
+    try {
+        await db.page.delete({
+            where: { id: pageId },
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to remove page:', error);
+        return { message: 'Failed to remove page' };
+    }
+}
+
+export async function updateUser(name: string, oldPassword?: string, newPassword?: string) {
+    const session = await import('@/auth').then(m => m.auth());
+    if (!session?.user?.email) {
+        throw new Error('Not authenticated');
+    }
+
+    const user = await db.user.findUnique({ where: { email: session.user.email } });
+    if (!user) throw new Error('User not found');
+
+    const data: any = { name };
+
+    if (oldPassword && newPassword) {
+        const passwordsMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!passwordsMatch) {
+            return { error: 'Incorrect old password' };
+        }
+        data.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    try {
+        await db.user.update({
+            where: { id: user.id },
+            data,
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to update user:', error);
+        return { message: 'Failed to update user information' };
+    }
+}
+
+export async function createOrder(data: {
+    albumId: string;
+    paperStyle: string;
+    deliveryMethod: string;
+    customerName: string;
+    address: string;
+    city: string;
+    zipCode: string;
+    country: string;
+    totalAmount: number;
+}) {
+    const session = await import('@/auth').then(m => m.auth());
+    if (!session?.user?.email) {
+        throw new Error('Not authenticated');
+    }
+
+    const user = await db.user.findUnique({ where: { email: session.user.email } });
+    if (!user) throw new Error('User not found');
+
+    try {
+        const order = await db.order.create({
+            data: {
+                ...data,
+                userId: user.id,
+                status: 'pending'
+            }
+        });
+        return { success: true, orderId: order.id };
+    } catch (error) {
+        console.error('Failed to create order:', error);
+        return { message: 'Failed to place order' };
+    }
+}
+
+export async function getOrders() {
+    // In a real app, check if user is admin
+    try {
+        return await db.order.findMany({
+            include: {
+                album: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    } catch (error) {
+        console.error('Failed to fetch orders:', error);
+        return [];
     }
 }

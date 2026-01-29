@@ -1,7 +1,7 @@
 
 import nodemailer from 'nodemailer';
 
-const domain = process.env.NEXT_PUBLIC_APP_URL;
+const domain = process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_URL || 'http://localhost:3000';
 
 export const sendVerificationEmail = async (
     email: string,

@@ -40,4 +40,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             },
         }),
     ],
+    callbacks: {
+        async session({ session }) {
+            if (session.user?.email) {
+                const user = await db.user.findUnique({
+                    where: { email: session.user.email },
+                });
+                if (!user) {
+                    return { ...session, user: undefined as any };
+                }
+            }
+            return session;
+        },
+    },
 });

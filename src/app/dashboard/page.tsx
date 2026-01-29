@@ -15,7 +15,11 @@ export default async function DashboardPage() {
         include: {
             albums: {
                 orderBy: { updatedAt: 'desc' },
-                include: { format: true }
+                include: { format: true, pages: true }
+            },
+            orders: {
+                orderBy: { createdAt: 'desc' },
+                include: { album: true }
             }
         }
     });
@@ -24,5 +28,5 @@ export default async function DashboardPage() {
 
     const formats = await getAlbumFormats();
 
-    return <DashboardClient albums={user.albums} formats={formats} />;
+    return <DashboardClient albums={user.albums} formats={formats} orders={user.orders} />;
 }

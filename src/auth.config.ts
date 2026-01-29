@@ -7,18 +7,20 @@ export const authConfig = {
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
-            const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
-            const isOnEditor = nextUrl.pathname.startsWith('/editor');
+            const protectedRoutes = ['/dashboard', '/editor', '/order', '/admin'];
+            const isProtectedRoute = protectedRoutes.some(route => nextUrl.pathname.startsWith(route));
 
-            if (isOnDashboard || isOnEditor) {
+            const isAuthRoute = nextUrl.pathname.startsWith('/login') || nextUrl.pathname.startsWith('/signup');
+
+            if (isProtectedRoute) {
                 if (isLoggedIn) return true;
                 return false; // Redirect unauthenticated users to login page
-            } else if (isLoggedIn) {
-                // Redirect logged-in users away from auth pages
-                if (nextUrl.pathname === '/login' || nextUrl.pathname === '/signup') {
-                    return Response.redirect(new URL('/dashboard', nextUrl));
-                }
             }
+
+            if (isLoggedIn && isAuthRoute) {
+                return Response.redirect(new URL('/dashboard', nextUrl));
+            }
+
             return true;
         },
     },

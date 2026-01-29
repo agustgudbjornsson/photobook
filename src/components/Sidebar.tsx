@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { useSession } from 'next-auth/react';
+
 export default function Sidebar() {
     const pathname = usePathname();
+    const { data: session } = useSession();
 
     const navItems = [
         { label: 'My Albums', href: '/dashboard' },
-        { label: 'Drafts', href: '/dashboard/drafts' },
-        { label: 'Orders', href: '/dashboard/orders' },
         { label: 'Settings', href: '/dashboard/settings' },
     ];
 
@@ -59,7 +60,7 @@ export default function Sidebar() {
                     borderRadius: 'var(--radius)',
                     fontSize: '0.875rem'
                 }}>
-                    <p style={{ marginBottom: '0.5rem', color: '#fff' }}>John Doe</p>
+                    <p style={{ marginBottom: '0.5rem', color: '#fff' }}>{session?.user?.name || 'User'}</p>
                     <p style={{ fontSize: '0.75rem', marginBottom: 0 }}>Pro Plan</p>
                 </div>
             </div>
