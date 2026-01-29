@@ -119,20 +119,18 @@ export default function Canvas({ page, onSave, format }: CanvasProps) {
     };
 
     const addElement = (element: CanvasElement) => {
-        setElements(prev => {
-            const updated = [...prev, element];
-            onSave(updated);
-            return updated;
-        });
+        const updated = [...elements, element];
+        setElements(updated);
+        onSave(updated);
         setSelectedId(element.id);
     };
 
-    const updateElement = (id: string, updates: Partial<CanvasElement>) => {
-        setElements(prev => {
-            const updated = prev.map(el => el.id === id ? { ...el, ...updates } : el);
-            onSave(updated);
-            return updated;
-        });
+    const updateElement = (id: string, updates: Partial<CanvasElement>, shouldSave = true) => {
+        const nextElements = elements.map(el => el.id === id ? { ...el, ...updates } : el);
+        setElements(nextElements);
+        if (shouldSave) {
+            onSave(nextElements);
+        }
     };
 
     const onDrop = (e: React.DragEvent) => {
@@ -356,8 +354,11 @@ export default function Canvas({ page, onSave, format }: CanvasProps) {
                                         <textarea
                                             autoFocus
                                             value={el.text}
-                                            onChange={(e) => updateElement(el.id, { text: e.target.value })}
-                                            onBlur={() => setEditingId(null)}
+                                            onChange={(e) => updateElement(el.id, { text: e.target.value }, false)}
+                                            onBlur={() => {
+                                                setEditingId(null);
+                                                onSave(elementsRef.current);
+                                            }}
                                             style={{
                                                 width: '100%',
                                                 height: '100%',
