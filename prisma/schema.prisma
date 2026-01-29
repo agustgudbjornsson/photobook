@@ -8,11 +8,11 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   emailVerified DateTime?
   albums        Album[]
@@ -37,10 +37,10 @@ model PasswordResetToken {
 
 model AlbumFormat {
   id        String   @id @default(cuid())
-  name      String   // e.g. "A4 Landscape", "Square 30x30"
-  slug      String   @unique // e.g. "a4-landscape", "square-30"
-  widthCm   Float    // e.g. 29.7
-  heightCm  Float    // e.g. 21.0
+  name      String
+  slug      String   @unique
+  widthCm   Float
+  heightCm  Float
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   albums    Album[]
@@ -51,22 +51,22 @@ model Album {
   title         String
   coverColor    String      @default("#3b82f6")
   userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   albumFormatId String
-  format        AlbumFormat @relation(fields: [albumFormatId], references: [id])
-  pages         Page[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  format        AlbumFormat @relation(fields: [albumFormatId], references: [id])
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages         Page[]
 }
 
 model Page {
-  id        String   @id @default(cuid())
-  albumId   String
-  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  albumId    String
   pageNumber Int
-  content   String   // JSON string of canvas state
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  album      Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
 
   @@unique([albumId, pageNumber])
 }

@@ -36,3 +36,37 @@ export const sendVerificationEmail = async (
         html: `<p>Click <a href="${confirmLink}">here</a> to confirm your email.</p>`,
     });
 };
+
+export const sendPasswordResetEmail = async (
+    email: string,
+    token: string
+) => {
+    const resetLink = `${domain}/auth/new-password?token=${token}`;
+
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`
+        =============================================
+        📧 MOCK EMAIL TO: ${email}
+        SUBJECT: Reset your password
+        LINK: ${resetLink}
+        =============================================
+        `);
+        return;
+    }
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+
+    await transporter.sendMail({
+        from: process.env.SMTP_FROM,
+        to: email,
+        subject: 'Reset your password',
+        html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
+    });
+};
