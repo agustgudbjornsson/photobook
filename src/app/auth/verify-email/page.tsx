@@ -4,9 +4,9 @@
 import { verifyEmail } from '@/lib/actions';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
@@ -36,6 +36,39 @@ export default function VerifyEmailPage() {
     }, [token]);
 
     return (
+        <>
+            {status === 'verifying' && (
+                <div>
+                    <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                    <p>Verifying your email...</p>
+                </div>
+            )}
+
+            {status === 'success' && (
+                <div>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem', color: 'green' }}>✅</div>
+                    <p style={{ marginBottom: '1.5rem' }}>{message}</p>
+                    <Link href="/login" className="btn btn-primary" style={{ width: '100%' }}>
+                        Go to Login
+                    </Link>
+                </div>
+            )}
+
+            {status === 'error' && (
+                <div>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem', color: 'red' }}>❌</div>
+                    <p style={{ marginBottom: '1.5rem', color: 'red' }}>{message}</p>
+                    <Link href="/login" className="btn btn-secondary" style={{ width: '100%' }}>
+                        Back to Login
+                    </Link>
+                </div>
+            )}
+        </>
+    );
+}
+
+export default function VerifyEmailPage() {
+    return (
         <div style={{
             minHeight: '100vh',
             display: 'flex',
@@ -45,33 +78,9 @@ export default function VerifyEmailPage() {
         }}>
             <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '400px', textAlign: 'center' }}>
                 <h2 style={{ marginBottom: '1rem' }}>Email Verification</h2>
-
-                {status === 'verifying' && (
-                    <div>
-                        <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                        <p>Verifying your email...</p>
-                    </div>
-                )}
-
-                {status === 'success' && (
-                    <div>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem', color: 'green' }}>✅</div>
-                        <p style={{ marginBottom: '1.5rem' }}>{message}</p>
-                        <Link href="/login" className="btn btn-primary" style={{ width: '100%' }}>
-                            Go to Login
-                        </Link>
-                    </div>
-                )}
-
-                {status === 'error' && (
-                    <div>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem', color: 'red' }}>❌</div>
-                        <p style={{ marginBottom: '1.5rem', color: 'red' }}>{message}</p>
-                        <Link href="/login" className="btn btn-secondary" style={{ width: '100%' }}>
-                            Back to Login
-                        </Link>
-                    </div>
-                )}
+                <Suspense fallback={<div>Loading...</div>}>
+                    <VerifyEmailContent />
+                </Suspense>
             </div>
         </div>
     );

@@ -26,6 +26,15 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
 model AlbumFormat {
   id        String   @id @default(cuid())
   name      String   // e.g. "A4 Landscape", "Square 30x30"
