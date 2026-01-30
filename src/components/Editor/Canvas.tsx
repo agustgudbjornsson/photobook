@@ -449,8 +449,8 @@ export default function Canvas({ page, onSave, format }: CanvasProps) {
                                             onMouseDown={(e) => e.stopPropagation()}
                                             style={{
                                                 position: 'absolute',
-                                                top: controlPos === 'top' ? '-115px' : 'auto',
-                                                bottom: controlPos === 'bottom' ? '-115px' : 'auto',
+                                                top: controlPos === 'top' ? '-50px' : 'auto',
+                                                bottom: controlPos === 'bottom' ? '-50px' : 'auto',
                                                 left: '50%',
                                                 transform: 'translateX(-50%)',
                                                 display: 'flex',
