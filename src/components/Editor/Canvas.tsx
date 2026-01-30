@@ -297,84 +297,43 @@ export default function Canvas({ page, onSave, format }: CanvasProps) {
                         background: 'white',
                         boxShadow: '0 0 50px rgba(0,0,0,0.5)',
                         position: 'relative',
-                        overflow: 'hidden',
+                        // Removed overflow: 'hidden' to allow handles to stick out
                     }}
                     onMouseDown={(e) => { e.stopPropagation(); setSelectedId(null); setEditingId(null); }}
                 >
+                    {/* Content Layer (Clipped to page) */}
                     <div style={{
                         position: 'absolute',
-                        top: '3mm', left: '3mm', right: '3mm', bottom: '3mm',
-                        border: '1px dashed #ddd',
-                        pointerEvents: 'none',
-                        zIndex: 1000
-                    }}></div>
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        overflow: 'hidden',
+                        pointerEvents: 'none'
+                    }}>
+                        {[...elements].sort((a, b) => a.zIndex - b.zIndex).map((el) => {
+                            const eWidth = el.width * el.scale;
+                            const eHeight = el.height * el.scale;
 
-                    {[...elements].sort((a, b) => a.zIndex - b.zIndex).map((el) => {
-                        const isSelected = el.id === selectedId;
-                        const isEditing = el.id === editingId;
-                        const eWidth = el.width * el.scale;
-                        const eHeight = el.height * el.scale;
-
-                        return (
-                            <div
-                                key={el.id}
-                                onMouseDown={(e) => handleMouseDown(e, el.id)}
-                                onDoubleClick={(e) => {
-                                    if (el.type === 'text') {
-                                        e.stopPropagation();
-                                        setEditingId(el.id);
-                                    }
-                                }}
-                                style={{
-                                    position: 'absolute',
-                                    left: el.x,
-                                    top: el.y,
-                                    width: eWidth,
-                                    height: eHeight,
-                                    zIndex: el.zIndex,
-                                    transform: `rotate(${el.rotation}deg)`,
-                                    cursor: isEditing ? 'text' : isSelected ? 'move' : 'pointer',
-                                    display: 'flex',
-                                    outline: isSelected ? '2px solid var(--primary)' : 'none',
-                                    outlineOffset: '2px',
-                                    boxShadow: isSelected ? '0 8px 24px rgba(0,0,0,0.2)' : 'none',
-                                }}
-                            >
-                                {el.type === 'photo' ? (
-                                    <div style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        backgroundImage: `url(${el.src})`,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        pointerEvents: 'none'
-                                    }} />
-                                ) : (
-                                    isEditing ? (
-                                        <textarea
-                                            autoFocus
-                                            value={el.text}
-                                            onChange={(e) => updateElement(el.id, { text: e.target.value }, false)}
-                                            onBlur={() => {
-                                                setEditingId(null);
-                                                onSave(elementsRef.current);
-                                            }}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                border: 'none',
-                                                outline: 'none',
-                                                resize: 'none',
-                                                background: 'transparent',
-                                                fontSize: `${el.fontSize}px`,
-                                                fontWeight: el.fontWeight as any,
-                                                fontStyle: el.fontStyle,
-                                                fontFamily: el.fontFamily,
-                                                textAlign: el.textAlign,
-                                                color: el.color,
-                                                padding: '4px',
-                                            }}
-                                        />
+                            return (
+                                <div
+                                    key={`content-${el.id}`}
+                                    style={{
+                                        position: 'absolute',
+                                        left: el.x,
+                                        top: el.y,
+                                        width: eWidth,
+                                        height: eHeight,
+                                        zIndex: el.zIndex,
+                                        transform: `rotate(${el.rotation}deg)`,
+                                        display: 'flex',
+                                    }}
+                                >
+                                    {el.type === 'photo' ? (
+                                        <div style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            backgroundImage: `url(${el.src})`,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                        }} />
                                     ) : (
                                         <div style={{
                                             width: '100%',
@@ -389,11 +348,81 @@ export default function Canvas({ page, onSave, format }: CanvasProps) {
                                             whiteSpace: 'pre-wrap',
                                             wordBreak: 'break-word',
                                             overflow: 'hidden',
-                                            pointerEvents: 'none'
                                         }}>
-                                            {el.text}
+                                            {el.id === editingId ? '' : el.text}
                                         </div>
-                                    )
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div style={{
+                        position: 'absolute',
+                        top: '3mm', left: '3mm', right: '3mm', bottom: '3mm',
+                        border: '1px dashed #ddd',
+                        pointerEvents: 'none',
+                        zIndex: 1000
+                    }}></div>
+
+                    {/* Interactive Layer (Not clipped, for handles and controls) */}
+                    {[...elements].sort((a, b) => a.zIndex - b.zIndex).map((el) => {
+                        const isSelected = el.id === selectedId;
+                        const isEditing = el.id === editingId;
+                        const eWidth = el.width * el.scale;
+                        const eHeight = el.height * el.scale;
+
+                        return (
+                            <div
+                                key={`interactive-${el.id}`}
+                                onMouseDown={(e) => handleMouseDown(e, el.id)}
+                                onDoubleClick={(e) => {
+                                    if (el.type === 'text') {
+                                        e.stopPropagation();
+                                        setEditingId(el.id);
+                                    }
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    left: el.x,
+                                    top: el.y,
+                                    width: eWidth,
+                                    height: eHeight,
+                                    zIndex: isSelected ? 10000 : el.zIndex, // Boost zIndex for handles
+                                    transform: `rotate(${el.rotation}deg)`,
+                                    cursor: isEditing ? 'text' : isSelected ? 'move' : 'pointer',
+                                    display: 'flex',
+                                    outline: isSelected ? '2px solid var(--primary)' : 'none',
+                                    outlineOffset: '2px',
+                                    // Removed boxShadow and background to make it transparent
+                                }}
+                            >
+                                {isEditing && el.type === 'text' && (
+                                    <textarea
+                                        autoFocus
+                                        value={el.text}
+                                        onChange={(e) => updateElement(el.id, { text: e.target.value }, false)}
+                                        onBlur={() => {
+                                            setEditingId(null);
+                                            onSave(elementsRef.current);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            border: 'none',
+                                            outline: 'none',
+                                            resize: 'none',
+                                            background: 'white', // White background while editing
+                                            fontSize: `${el.fontSize}px`,
+                                            fontWeight: el.fontWeight as any,
+                                            fontStyle: el.fontStyle,
+                                            fontFamily: el.fontFamily,
+                                            textAlign: el.textAlign,
+                                            color: el.color,
+                                            padding: '4px',
+                                            zIndex: 10,
+                                        }}
+                                    />
                                 )}
 
                                 {isSelected && !isEditing && (
@@ -433,7 +462,8 @@ export default function Canvas({ page, onSave, format }: CanvasProps) {
                                                 boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                                                 zIndex: 300,
                                                 minWidth: '240px',
-                                                border: '1px solid #444'
+                                                border: '1px solid #444',
+                                                pointerEvents: 'all'
                                             }}
                                         >
                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
