@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import AlbumCard from '@/components/AlbumCard';
 import CreateAlbumWizard from '@/components/CreateAlbumWizard';
@@ -15,6 +15,16 @@ export default function DashboardClient({
     orders: any[]
 }) {
     const [showWizard, setShowWizard] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const formatDate = (date: any) => {
+        if (!mounted || !date) return '...';
+        return new Date(date).toLocaleDateString();
+    };
 
     return (
         <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
@@ -50,7 +60,7 @@ export default function DashboardClient({
                             title={album.title}
                             coverColor={album.coverColor}
                             pageCount={album.pages?.length || 0}
-                            date={new Date(album.updatedAt).toLocaleDateString()}
+                            date={formatDate(album.updatedAt)}
                         />
                     ))}
 
@@ -113,7 +123,7 @@ export default function DashboardClient({
                                                 {order.album?.title || 'Deleted Album'}
                                             </td>
                                             <td style={{ padding: '1rem', fontSize: '0.9rem', color: '#888' }}>
-                                                {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                                                {formatDate(order.createdAt)}
                                             </td>
                                             <td style={{ padding: '1rem' }}>
                                                 <span style={{
