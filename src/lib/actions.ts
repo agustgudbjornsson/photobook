@@ -432,3 +432,49 @@ export async function getOrders() {
         return [];
     }
 }
+
+export async function createUploadSession() {
+    try {
+        const session = await db.uploadSession.create({
+            data: { photos: '[]' }
+        });
+        return { success: true, sessionId: session.id };
+    } catch (error) {
+        console.error('Failed to create upload session:', error);
+        return { success: false, error: 'Failed to create session' };
+    }
+}
+
+export async function addPhotosToSession(sessionId: string, newPhotoUrls: string[]) {
+    try {
+        const session = await db.uploadSession.findUnique({
+            where: { id: sessionId }
+        });
+        if (!session) return { success: false, error: 'Session not found' };
+
+        const photos = JSON.parse(session.photos || '[]');
+        const updatedPhotos = [...photos, ...newPhotoUrls];
+
+        await db.uploadSession.update({
+            where: { id: sessionId },
+            data: { photos: JSON.stringify(updatedPhotos) }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to add photos to session:', error);
+        return { success: false, error: 'Failed to add photos' };
+    }
+}
+
+export async function pollUploadSession(sessionId: string) {
+    try {
+        const session = await db.uploadSession.findUnique({
+            where: { id: sessionId }
+        });
+        if (!session) return { success: false, error: 'Session not found' };
+        return { success: true, photos: JSON.parse(session.photos || '[]') };
+    } catch (error) {
+        console.error('Failed to poll upload session:', error);
+        return { success: false, error: 'Failed to poll session' };
+    }
+}

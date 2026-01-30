@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-    Image as ImageIcon,
+    ImageIcon,
     Layers,
     Type,
     Plus,
@@ -10,6 +10,7 @@ import {
     ChevronDown,
     Trash2
 } from 'lucide-react';
+import PhotoSourceDialog from './PhotoSourceDialog';
 
 interface EditorSidebarProps {
     photos: string[];
@@ -28,6 +29,7 @@ export default function EditorSidebar({
 }: EditorSidebarProps) {
     const [photos, setPhotos] = useState(initialPhotos);
     const [activeTab, setActiveTab] = useState<'photos' | 'layers'>('photos');
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const onDragStart = (e: React.DragEvent, src: string) => {
         e.dataTransfer.setData('text/plain', src);
@@ -35,8 +37,11 @@ export default function EditorSidebar({
     };
 
     const handleAddPhoto = () => {
-        const newPhoto = `https://picsum.photos/seed/${Math.random()}/400/300`;
-        setPhotos(prev => [newPhoto, ...prev]);
+        setIsDialogOpen(true);
+    };
+
+    const handlePhotosAdded = (newPhotoUrls: string[]) => {
+        setPhotos(prev => [...newPhotoUrls, ...prev]);
     };
 
     return (
@@ -252,6 +257,12 @@ export default function EditorSidebar({
                     </div>
                 </div>
             )}
+
+            <PhotoSourceDialog
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                onAddPhotos={handlePhotosAdded}
+            />
         </aside>
     );
 }

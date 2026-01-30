@@ -91,3 +91,10 @@ model Page {
 
   @@unique([albumId, pageNumber])
 }
+
+model UploadSession {
+  id        String   @id @default(cuid())
+  photos    String   @default("[]") // JSON string array of URLs
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
